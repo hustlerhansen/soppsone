@@ -933,10 +933,11 @@ details[open] .info-toggle { transform: rotate(90deg); }
           </ul>
           <p><strong>Kjente begrensninger</strong></p>
           <ul>
-            <li>SR16-polygondata kun for Oslo-regionen.</li>
-            <li>DTM-raster er et pilot-utklipp (Østlandet). Mangler DTM i nordlige celler.</li>
-            <li>~60% av scorede celler får indeks ≥85 — modellen skiller lite innenfor tett skogsmark.</li>
-            <li>Nedbørsdata oppdateres daglig (14-dagers vindu), ikke sanntid.</li>
+            <li><strong>SR16 treslagsdata:</strong> Full SOSI-dekning for 23 kommuner (Oslo-regionen). Øvrige celler bruker WMS-tilnærming (kun total skogprosent, ikke artsfordeling) — lavere presisjon.</li>
+            <li><strong>DTM-dekning:</strong> Pilotdata kun for deler av Østlandet (~58% dekning). Celler uten DTM er scoret uten høydefaktor (lavere datadekning).</li>
+            <li><strong>Høy gjennomsnittscore:</strong> ~60% av scorede celler får indeks ≥85. Norsk produktiv skogsmark scorer naturlig høyt på alle faktorer — modellen skiller lite innenfor tett skog. Venter på mykolog-kalibrering.</li>
+            <li><strong>Nedbør:</strong> 14-dagers rullerende vindu, oppdatert daglig fra seNorge. Ikke sanntid.</li>
+            <li><strong>Geografisk dekning:</strong> Kun Sørøst-Norge og Innlandet (19 734 km²).</li>
           </ul>
           <p>Rutestørrelse: 1×1 km · EPSG:25833 · Sørøst- og Østnorge</p>
         </div>
