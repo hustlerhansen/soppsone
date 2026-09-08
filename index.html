@@ -682,6 +682,16 @@ details[open] .info-toggle { transform: rotate(90deg); }
   white-space: nowrap;
 }
 .map-badge.beta { color: var(--beta-text); border-color: var(--beta-border); background: var(--beta-bg); }
+/* Stale precipitation badge — amber warning when data is ≥2 days old */
+.map-badge.precip-stale { color: #8c6a1a; border-color: #c49a2a; background: #fdf3dc; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .map-badge.precip-stale {
+    color: #e0b84a; border-color: #9a7320; background: #332b10;
+  }
+}
+:root[data-theme="dark"] .map-badge.precip-stale {
+  color: #e0b84a; border-color: #9a7320; background: #332b10;
+}
 
 /* ── Toast ────────────────────────────────────────────────────────────── */
 .toast {
@@ -763,6 +773,25 @@ details[open] .info-toggle { transform: rotate(90deg); }
   .zoom-group .map-btn { padding: 7px 13px; }
   .map-info-bar { bottom: 8px; left: 8px; gap: 4px; }
   .map-badge { font-size: 9.5px; padding: 3px 6px; }
+}
+
+/* ── Print / export ───────────────────────────────────────────────────── */
+@media print {
+  /* Hide everything except the map panel */
+  .sidebar, .mob-menu-btn, .toast, .map-toolbar, .map-info-bar { display: none !important; }
+  body { margin: 0; }
+  .app { display: block; height: 100vh; }
+  .map-panel { width: 100%; height: 100vh; }
+  canvas { width: 100% !important; height: auto !important; }
+  /* Print footer with attribution */
+  .map-panel::after {
+    content: 'Soppsone · Habitatkart for matsopp · hustlerhansen.github.io/soppsone · BETA / uvaliderte vekter';
+    display: block;
+    text-align: center;
+    font-size: 8pt;
+    color: #888;
+    padding: 6pt 0;
+  }
 }
 </style>
 
@@ -913,6 +942,32 @@ details[open] .info-toggle { transform: rotate(90deg); }
         </div>
       </details>
 
+      <!-- Methodology (collapsible, closed by default) -->
+      <details class="info-section">
+        <summary>
+          <span class="section-label" style="margin:0">Metodikk</span>
+          <span class="info-toggle">▸</span>
+        </summary>
+        <div class="info-body">
+          <p><strong>Habitatscore (0–100)</strong></p>
+          <p>Hver celle får en <em>basisscore</em> basert på stabile geografiske faktorer (vertstre, skogareal, høyde, standalder) og en <em>aktuell score</em> som inkluderer nedbør de siste 14 dagene.</p>
+          <p>Faktorer vektes som:</p>
+          <ul>
+            <li>Vektgjennomsnitt av tilgjengelige faktorer</li>
+            <li>Manglende data (<em>ingen verdi</em>) tas ikke med i nevner — det senker ikke scoren</li>
+            <li>Celler uten noe skogsignal (AR50) vises som grå og scorer ikke</li>
+          </ul>
+          <p><strong>Datadekning (0–1)</strong></p>
+          <p>Viser hvor komplett datagrunnlaget er. En celle med dekning 0,5 betyr at halvparten av faktordataene mangler — scoren er fortsatt gyldig, men usikker. Lav dekning er vist i detalj-panelet.</p>
+          <p><strong>Datakilde-presedensrekkefølge</strong></p>
+          <ol>
+            <li>SR16 SOSI-polygoner (full treslagsinformasjon)</li>
+            <li>SR16 WMS (tilnærming — bare skogprosent, ikke artsfordeling)</li>
+          </ol>
+          <p style="font-size:10px;color:var(--text-dim)">Kildeindikator vises per celle i detaljpanelet.</p>
+        </div>
+      </details>
+
       <!-- Cell detail -->
       <div class="detail-section" id="detail-panel">
         <div class="detail-empty">
@@ -934,6 +989,7 @@ details[open] .info-toggle { transform: rotate(90deg); }
       <button class="map-btn" id="btn-reset"  title="Tilbakestill visning">↺ Nullstill</button>
       <button class="map-btn" id="btn-loc"    title="Vis min posisjon">📍 Finn meg</button>
       <button class="map-btn" id="btn-theme"  title="Bytt lys/mørk">☀ Tema</button>
+      <button class="map-btn" id="btn-print"  title="Skriv ut / eksporter kart" onclick="window.print()">🖨 Skriv ut</button>
     </div>
 
     <canvas id="map-canvas" tabindex="0" aria-label="Habitatkart for soppsonene"></canvas>
@@ -1475,7 +1531,9 @@ function renderDetail(cell) {
 
   // Coordinates and links
   const { lat: cLat, lng: cLng } = utm33ToLatLng(cell.e * 1000 + 500, cell.n * 1000 + 500);
-  const mapsUrl  = `https://www.google.com/maps/search/?api=1&query=${cLat.toFixed(5)},${cLng.toFixed(5)}`;
+  const cE = cell.e * 1000 + 500, cN = cell.n * 1000 + 500;
+  const mapsUrl     = `https://www.google.com/maps/search/?api=1&query=${cLat.toFixed(5)},${cLng.toFixed(5)}`;
+  const norgeskartUrl = `https://norgeskart.no/#!?zoom=14&lat=${cN}&lon=${cE}&p=norgeskart`;
   const coordStr = `${cLat.toFixed(4)}°N ${cLng.toFixed(4)}°Ø`;
 
   // Score verdict (honest)
@@ -1499,7 +1557,8 @@ function renderDetail(cell) {
   panel.innerHTML = `
     <div class="detail-cell-id">
       <span>${cell.id}</span>
-      <a class="detail-link" href="${mapsUrl}" target="_blank" rel="noopener noreferrer">↗ Google Maps</a>
+      <a class="detail-link" href="${norgeskartUrl}" target="_blank" rel="noopener noreferrer">↗ Norgeskart</a>
+      <a class="detail-link" href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="margin-left:4px">↗ Google Maps</a>
     </div>
     ${covWarn}
     ${noForestMsg || `<div class="cov-pill ${covClass}"><span class="cov-dot"></span>${covPct}% datadekning</div>`}
@@ -1933,6 +1992,17 @@ document.documentElement.lang = 'no';
     if (pb) {
       pb.textContent = `Nedbør til ${META.as_of}`;
       pb.style.display = '';
+      // Stale badge: warn if precip data is ≥2 days old
+      try {
+        const asOfDate = new Date(META.as_of + 'T12:00:00');
+        const todayDate = new Date();
+        todayDate.setHours(12, 0, 0, 0);
+        const ageDays = Math.round((todayDate - asOfDate) / 86400000);
+        if (ageDays >= 2) {
+          pb.title = `Nedbørsdata er ${ageDays} dager gammel (seNorge oppdateres daglig)`;
+          pb.classList.add('precip-stale');
+        }
+      } catch (_) {}
     }
     const di = document.getElementById('senorge-date-inline');
     if (di) di.textContent = META.as_of;
