@@ -1,4 +1,15 @@
-<title>Soppsone</title>
+<title>Soppsone — Habitatkart for matsopp</title>
+<meta name="description" content="Habitatindeks (0–100) for kantarell i 1×1 km rutenett over Sørøst-Norge og Innlandet. Nedbørsdata oppdateres daglig.">
+<link rel="canonical" href="https://hustlerhansen.github.io/soppsone/">
+<!-- Open Graph / social sharing -->
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://hustlerhansen.github.io/soppsone/">
+<meta property="og:title"       content="Soppsone — Habitatkart for matsopp">
+<meta property="og:description" content="Habitatindeks for kantarell i 1×1 km rutenett over Sørøst-Norge og Innlandet. Nedbørsdata (seNorge) oppdateres daglig.">
+<!-- Twitter / X card -->
+<meta name="twitter:card"        content="summary">
+<meta name="twitter:title"       content="Soppsone — Habitatkart for matsopp">
+<meta name="twitter:description" content="Habitatindeks for kantarell i 1×1 km rutenett over Sørøst-Norge og Innlandet. Nedbørsdata oppdateres daglig.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300;1,6..72,400&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* ── Tokens ──────────────────────────────────────────────────────────── */
@@ -1454,7 +1465,10 @@ function renderDetail(cell) {
 
   // Meta info
   const metaLines = [];
-  if (cell.age != null && cell.age > 0) metaLines.push(`<strong>Standalder:</strong> ${Math.round(cell.age)} år`);
+  if (cell.age != null) {
+    const ageLabel = cell.age === 0 ? '< 5 år (ung foryngelse)' : `${Math.round(cell.age)} år`;
+    metaLines.push(`<strong>Standalder:</strong> ${ageLabel}`);
+  }
   if (cell.dtm != null && cell.dtm > 0)  metaLines.push(`<strong>Høyde:</strong> ${Math.round(cell.dtm)} m o.h.`);
   metaLines.push(`<strong>Datadekning:</strong> ${covPct}%`);
   if (srSrc) metaLines.push(`<strong>SR16-kilde:</strong> ${srSrc.toUpperCase()}`);
@@ -1467,13 +1481,28 @@ function renderDetail(cell) {
   // Score verdict (honest)
   const verdict = cell.score !== null ? activeSpecies.scoreLabel(cell.score) : '';
 
+  // Non-forest cells: explain why score is missing
+  const isNoForest = cell.score === null && cell.fsp === false;
+  const noForestMsg = isNoForest
+    ? `<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;
+        padding:8px 10px;margin:6px 0 8px;font-size:10.5px;color:var(--text-muted);line-height:1.5">
+        🌾 <strong>Ikke skogareal</strong> — Kantarell er mykorrhizasopp og er avhengig av
+        et levende vertstrær (gran, furu, bjørk). Celler uten skogsignal (AR50) skåres ikke.
+      </div>`
+    : (cell.score === null
+        ? `<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;
+            padding:8px 10px;margin:6px 0 8px;font-size:10.5px;color:var(--text-muted);line-height:1.5">
+            ⚠ <strong>Mangler data</strong> — Utilstrekkelig grunnlagsdata for å beregne indeks.
+          </div>`
+        : '');
+
   panel.innerHTML = `
     <div class="detail-cell-id">
       <span>${cell.id}</span>
       <a class="detail-link" href="${mapsUrl}" target="_blank" rel="noopener noreferrer">↗ Google Maps</a>
     </div>
     ${covWarn}
-    <div class="cov-pill ${covClass}"><span class="cov-dot"></span>${covPct}% datadekning</div>
+    ${noForestMsg || `<div class="cov-pill ${covClass}"><span class="cov-dot"></span>${covPct}% datadekning</div>`}
     <div class="detail-score-row">
       <div class="detail-score-big">${scoreDisplay}</div>
       <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:3px">
@@ -1481,7 +1510,7 @@ function renderDetail(cell) {
         ${verdict ? `<div style="font-size:10px;color:var(--text-muted);white-space:nowrap">${verdict}</div>` : ''}
       </div>
     </div>
-    <div class="detail-beta-note">${activeSpecies.betaNote}</div>
+    ${cell.score !== null ? `<div class="detail-beta-note">${activeSpecies.betaNote}</div>` : ''}
     <div class="factor-list">${factorHtml}</div>
     ${speciesHtml}
     ${precipHtml}
